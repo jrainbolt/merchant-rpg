@@ -84,6 +84,12 @@ charterbound-save-v1
 
 Use the in-game menu Save button to save manually. Continue appears on the title screen after a save exists.
 
+## Character Animation
+
+The player uses a generated placeholder spritesheet created in `BootScene`. It has four rows for direction (`down`, `left`, `right`, `up`) and three frames per row.
+
+`BootScene` registers idle and walking animations with keys like `player-idle-down` and `player-walk-right`. The `Player` entity in `src/game/entities/Player.ts` reads keyboard input, applies Arcade Physics velocity, chooses the correct walking animation while moving, and returns to the idle animation for the last movement direction when stopped.
+
 ## Code Structure
 
 ```text
@@ -91,6 +97,8 @@ src/
   main.ts
   game/
     config.ts
+    entities/
+      Player.ts
     scenes/
       BootScene.ts
       TitleScene.ts

@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
+import { Player } from '../entities/Player';
 import { QuestSystem } from '../systems/QuestSystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import type { GameData } from '../types/gameTypes';
 
 export class ForestScene extends Phaser.Scene {
-  private player!: Phaser.Physics.Arcade.Sprite;
+  private player!: Player;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private blockers!: Phaser.Physics.Arcade.StaticGroup;
@@ -21,9 +22,8 @@ export class ForestScene extends Phaser.Scene {
     this.drawForest();
 
     const position = this.gameState.position.map === 'ForestScene' ? this.gameState.position : { x: 110, y: 500 };
-    this.player = this.physics.add.sprite(position.x, position.y, 'hero');
-    this.player.setCollideWorldBounds(true);
-    this.physics.add.collider(this.player, this.blockers);
+    this.player = new Player(this, position.x, position.y, 165);
+    this.physics.add.collider(this.player.sprite, this.blockers);
 
     this.add.text(28, 24, QuestSystem.getSlimeHuntText(this.gameState.quests), {
       fontFamily: 'monospace',
@@ -37,7 +37,7 @@ export class ForestScene extends Phaser.Scene {
 
   update(): void {
     if (this.scene.isActive('MenuScene')) {
-      this.player.setVelocity(0);
+      this.player.stop();
       return;
     }
 
@@ -88,16 +88,9 @@ export class ForestScene extends Phaser.Scene {
   }
 
   private handleMovement(): boolean {
-    const speed = 165;
-    const left = this.cursors.left?.isDown || this.keys.A.isDown;
-    const right = this.cursors.right?.isDown || this.keys.D.isDown;
-    const up = this.cursors.up?.isDown || this.keys.W.isDown;
-    const down = this.cursors.down?.isDown || this.keys.S.isDown;
-
-    this.player.setVelocity(Number(right) * speed - Number(left) * speed, Number(down) * speed - Number(up) * speed);
-    this.player.body?.velocity.normalize().scale(speed);
+    const wasMoving = this.player.handleMovement(this.cursors, this.keys);
     this.registry.set('gameData', SaveSystem.updatePosition(this.gameState, 'ForestScene', this.player.x, this.player.y));
-    return left || right || up || down;
+    return wasMoving;
   }
 
   private checkTownGate(): void {

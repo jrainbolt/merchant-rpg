@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { createCompanion } from '../data/characters';
+import { Player } from '../entities/Player';
 import { DialogueSystem } from '../systems/DialogueSystem';
 import { QuestSystem } from '../systems/QuestSystem';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -15,7 +16,7 @@ type NpcConfig = {
 };
 
 export class TownScene extends Phaser.Scene {
-  private player!: Phaser.Physics.Arcade.Sprite;
+  private player!: Player;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private blockers!: Phaser.Physics.Arcade.StaticGroup;
@@ -36,8 +37,8 @@ export class TownScene extends Phaser.Scene {
     this.drawTown();
     this.createPlayer();
     this.createNpcs();
-    this.physics.add.collider(this.player, this.blockers);
-    this.physics.add.collider(this.player, this.npcs);
+    this.physics.add.collider(this.player.sprite, this.blockers);
+    this.physics.add.collider(this.player.sprite, this.npcs);
 
     this.input.keyboard?.on('keydown-SPACE', () => this.tryInteract());
     this.input.keyboard?.on('keydown-ENTER', () => this.tryInteract());
@@ -47,7 +48,7 @@ export class TownScene extends Phaser.Scene {
 
   update(): void {
     if (this.dialogue.isOpen || this.scene.isActive('MenuScene')) {
-      this.player.setVelocity(0);
+      this.player.stop();
       return;
     }
 
@@ -85,8 +86,7 @@ export class TownScene extends Phaser.Scene {
 
   private createPlayer(): void {
     const position = this.gameState.position.map === 'TownScene' ? this.gameState.position : { x: 128, y: 192 };
-    this.player = this.physics.add.sprite(position.x, position.y, 'hero');
-    this.player.setCollideWorldBounds(true);
+    this.player = new Player(this, position.x, position.y, 160);
   }
 
   private createNpcs(): void {
@@ -157,14 +157,7 @@ export class TownScene extends Phaser.Scene {
   }
 
   private handleMovement(): void {
-    const speed = 160;
-    const left = this.cursors.left?.isDown || this.keys.A.isDown;
-    const right = this.cursors.right?.isDown || this.keys.D.isDown;
-    const up = this.cursors.up?.isDown || this.keys.W.isDown;
-    const down = this.cursors.down?.isDown || this.keys.S.isDown;
-
-    this.player.setVelocity(Number(right) * speed - Number(left) * speed, Number(down) * speed - Number(up) * speed);
-    this.player.body?.velocity.normalize().scale(speed);
+    this.player.handleMovement(this.cursors, this.keys);
     this.registry.set('gameData', SaveSystem.updatePosition(this.gameState, 'TownScene', this.player.x, this.player.y));
   }
 
